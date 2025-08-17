@@ -16,7 +16,7 @@
   "type": "commonjs",
   "dependencies": {
     "@types/pdfkit": "^0.17.2",
-    "cloudinary": "^2.7.0",
+    "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
