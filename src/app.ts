@@ -19,7 +19,10 @@ app.use(
 app.use(express.json());
 app.use(
   cors({
-    origin: envVars.FRONTEND_URL,
+    origin: [
+      envVars.FRONTEND_URL,
+      "https://mouchak-e-commerce-frontend-2-0.vercel.app/",
+    ],
     credentials: true,
   })
 );
