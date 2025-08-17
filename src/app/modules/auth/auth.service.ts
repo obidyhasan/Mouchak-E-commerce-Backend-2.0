@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { redisClient } from "../../config/redis.config";
 import { sendEmail } from "../../utils/sendEmail";
 import { IUser } from "../user/user.interface";
 import { User } from "../user/user.model";
 import crypto from "crypto";
 
-const OTP_EXPIRATION = 5 * 60; // 2 minute
+const OTP_EXPIRATION = 5 * 60; // 5 minute
 
 const generateOTP = (length = 6) => {
   // 6 digit otp
@@ -18,6 +19,12 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     await User.create(payload);
   }
 
+  const { email, ...restPayload } = payload;
+  await User.findByIdAndUpdate(isUserExits?._id, restPayload, {
+    new: true,
+    runValidators: true,
+  });
+
   const otp = generateOTP();
   const redisKey = `otp:${payload.email}`;
 
@@ -30,7 +37,7 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
 
   await sendEmail({
     to: payload.email as string,
-    subject: "Your OTP Code",
+    subject: "Your Verification OTP Code",
     templateName: "otp",
     templateData: {
       otp: otp,

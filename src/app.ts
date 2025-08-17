@@ -5,8 +5,6 @@ import expressSession from "express-session";
 import { envVars } from "./app/config/env";
 import { router } from "./app/routers";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
-import passport from "passport";
-import "./app/config/passport";
 import notFound from "./app/middlewares/noFound";
 
 const app = express();
@@ -18,8 +16,6 @@ app.use(
     saveUninitialized: false,
   })
 );
-app.use(passport.initialize());
-app.use(passport.session());
 app.use(express.json());
 app.use(
   cors({

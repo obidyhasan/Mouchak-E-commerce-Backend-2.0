@@ -2,6 +2,9 @@ import z from "zod";
 import { ORDER_STATUS, PAYMENT_STATUS } from "./order.interface";
 
 export const createOrderZodSchema = z.object({
+  carts: z.array(
+    z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid Cart ObjectId")
+  ),
   status: z
     .enum(Object.values(ORDER_STATUS) as [string], {
       message:

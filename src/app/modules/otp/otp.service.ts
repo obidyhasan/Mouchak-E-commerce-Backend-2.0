@@ -5,8 +5,7 @@ import { redisClient } from "../../config/redis.config";
 
 const verifyOTP = async (email: string, otp: string) => {
   const user = await User.findOne({ email });
-
-  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found!");
 
   const redisKey = `otp:${email}`;
   const savedOtp = await redisClient.get(redisKey);

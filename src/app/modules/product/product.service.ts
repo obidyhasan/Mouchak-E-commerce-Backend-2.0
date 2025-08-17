@@ -1,6 +1,6 @@
 import httpStatus from "http-status-codes";
 import AppError from "../../errors/AppError";
-import { IProduct, PStatus } from "./product.interface";
+import { IProduct } from "./product.interface";
 import { Product } from "./product.model";
 import { deleteImageFromCloudinary } from "../../config/cloudinary.config";
 
@@ -17,7 +17,7 @@ const createProduct = async (payload: Partial<IProduct>) => {
 };
 
 const getAllProduct = async () => {
-  const products = await Product.find({ status: PStatus.ACTIVE });
+  const products = await Product.find();
   const totalProduct = await Product.countDocuments();
 
   return {
@@ -32,9 +32,6 @@ const getSingleProduct = async (slug: string) => {
   const product = await Product.findOne({ slug });
 
   if (!product) throw new AppError(httpStatus.NOT_FOUND, "Product not found!");
-
-  if (product.status === PStatus.INACTIVE)
-    throw new AppError(httpStatus.NOT_FOUND, "Product is InActive!");
 
   return {
     product,

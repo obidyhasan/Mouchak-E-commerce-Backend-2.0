@@ -83,7 +83,6 @@
       <div class="details">
         <p><strong>Name:</strong> <%= userName || "N/A" %></p>
         <p><strong>Email:</strong> <%= userEmail || "N/A" %></p>
-        <p><strong>Tracking ID:</strong> <%= trackingId || "N/A" %></p>
         <p>
           <strong>Order Date:</strong>
           <%= orderDate ? new Date(orderDate).toLocaleString() : "N/A" %>
@@ -104,10 +103,7 @@
           <tr>
             <td><%= product.name || "N/A" %></td>
             <td><%= product.quantity || 0 %></td>
-            <td>
-              BDT <%= product.price != null ? product.price.toFixed(2) : "0.00"
-              %>
-            </td>
+            <td>BDT <%= product.price != null ? product.price : "0.00" %></td>
           </tr>
           <% }); %> <% } else { %>
           <tr>
@@ -118,8 +114,7 @@
       </table>
 
       <p class="total">
-        Total Paid: BDT <%= totalAmount != null ? totalAmount.toFixed(2) :
-        "0.00" %>
+        Total Paid: BDT <%= totalAmount != null ? totalAmount : "0.00" %>
       </p>
 
       <% if (invoiceDownloadUrl) { %>

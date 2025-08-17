@@ -103,6 +103,8 @@ const createOrder = async (
     ...additionalData,
   };
 
+  console.log(user.email);
+
   try {
     await sendEmail({
       to: user.email,
@@ -131,7 +133,7 @@ const createOrder = async (
 
 const getAllOrders = async () => {
   const orders = await Order.find({})
-    .populate("user", "name email carts orders")
+    .populate("user", "name email")
     .populate("carts");
   const totalOrders = await Order.countDocuments();
 
