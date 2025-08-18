@@ -12,7 +12,7 @@
       }
 
       .container {
-        max-width: 600px;
+        max-width: 650px;
         margin: auto;
         background: #ffffff;
         padding: 30px;
@@ -23,6 +23,7 @@
       h1 {
         color: #1a73e8;
         text-align: center;
+        margin-bottom: 20px;
       }
 
       .details {
@@ -50,22 +51,37 @@
         background-color: #f1f3f5;
       }
 
-      .total {
-        text-align: right;
+      .summary {
         margin-top: 20px;
+        font-size: 16px;
+        text-align: right;
+      }
+
+      .summary p {
+        margin: 5px 0;
+      }
+
+      .summary .grand-total {
         font-size: 18px;
         font-weight: bold;
+        color: #1a73e8;
       }
 
       .btn {
-        display: block;
-        width: max-content;
+        display: inline-block;
         margin: 30px auto 0;
-        padding: 12px 24px;
+        padding: 12px 28px;
         background-color: #1a73e8;
-        color: #ffffff;
+        color: #ffffff !important;
         text-decoration: none;
-        border-radius: 6px;
+        border-radius: 8px;
+        font-weight: bold;
+        text-align: center;
+        transition: background 0.3s ease;
+      }
+
+      .btn:hover {
+        background-color: #0c5fcd;
       }
 
       .footer {
@@ -95,6 +111,7 @@
             <th>Product</th>
             <th>Qty</th>
             <th>Price (BDT)</th>
+            <th>Subtotal (BDT)</th>
           </tr>
         </thead>
         <tbody>
@@ -103,33 +120,45 @@
           <tr>
             <td><%= product.name || "N/A" %></td>
             <td><%= product.quantity || 0 %></td>
-            <td>BDT <%= product.price != null ? product.price : "0.00" %></td>
+            <td>BDT <%= Number(product.price || 0).toFixed(2) %></td>
+            <td>
+              BDT <%= Number((product.quantity || 0) * (product.price ||
+              0)).toFixed(2) %>
+            </td>
           </tr>
           <% }); %> <% } else { %>
           <tr>
-            <td colspan="3" style="text-align: center">No products found</td>
+            <td colspan="4" style="text-align: center">No products found</td>
           </tr>
           <% } %>
         </tbody>
       </table>
 
-      <p class="total">
-        Total Paid: BDT <%= totalAmount != null ? totalAmount : "0.00" %>
-      </p>
+      <div class="summary">
+        <p>Subtotal: BDT <%= Number(subtotal || 0).toFixed(2) %></p>
+        <p>Shipping: BDT <%= Number(shippingCost || 0).toFixed(2) %></p>
+        <p class="grand-total">
+          Total Paid: BDT <%= Number((subtotal || 0) + (shippingCost ||
+          0)).toFixed(2) %>
+        </p>
+      </div>
 
       <% if (invoiceDownloadUrl) { %>
-      <a
-        class="btn"
-        href="<%= invoiceDownloadUrl %>"
-        target="_blank"
-        rel="noopener noreferrer"
-        >Download Invoice PDF</a
-      >
+      <div style="text-align: center">
+        <a
+          class="btn"
+          href="<%= invoiceDownloadUrl %>"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Download Invoice PDF
+        </a>
+      </div>
       <% } %>
 
       <div class="footer">
         <p>Thanks for shopping with us!</p>
-        <p>&copy; <%= new Date().getFullYear() %> Zero Fit</p>
+        <p>&copy; <%= new Date().getFullYear() %> Mouchack</p>
       </div>
     </div>
   </body>

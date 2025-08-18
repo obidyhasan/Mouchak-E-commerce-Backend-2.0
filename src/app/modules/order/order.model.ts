@@ -41,6 +41,7 @@ const orderSchema = new Schema<IOrder>(
       default: PAYMENT_STATUS.UNPAID,
     },
     totalAmount: { type: Number },
+    shippingCost: { type: Number },
     statusLogs: [statusLogSchema],
     invoiceUrl: {
       type: String,

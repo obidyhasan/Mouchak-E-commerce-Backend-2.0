@@ -36,6 +36,7 @@ export interface IOrder {
   status: ORDER_STATUS;
   statusLogs?: IOrderLog[];
   totalAmount: number;
+  shippingCost: number;
   invoiceUrl?: string;
   createdAt?: Date;
 }

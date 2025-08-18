@@ -14,29 +14,154 @@ import { uploadBufferToCloudinary } from "../../config/cloudinary.config";
 import { sendEmail } from "../../utils/sendEmail";
 import { generateOrderId } from "../../utils/generateOrderId";
 
+// const createOrder = async (
+//   decodedToken: JwtPayload,
+//   payload: Partial<IOrder>
+// ) => {
+//   const isUserExits = await User.findById(decodedToken.userId);
+//   if (!isUserExits)
+//     throw new AppError(httpStatus.BAD_REQUEST, "User does not exits!");
+
+//   const isCartsExits = await Cart.find({ _id: { $in: payload.carts } });
+//   if (isCartsExits.length !== payload.carts?.length)
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       "One or more carts do not exits!"
+//     );
+
+//   const totalAmount = isCartsExits.reduce((sum, cart) => sum + cart.amount, 0);
+
+//   for (const cart of isCartsExits) {
+//     const isProductExits = await Product.findById(cart.product);
+//     if (!isProductExits)
+//       throw new AppError(httpStatus.NOT_FOUND, "Product not found!");
+//   }
+
+//   const orderLog: IOrderLog = {
+//     status: ORDER_STATUS.Pending,
+//     timestamp: new Date(),
+//     updateBy: decodedToken.userId,
+//     note: "Order request successfully. Current status is Pending.",
+//   };
+
+//   payload.orderId = generateOrderId();
+//   payload.statusLogs = [orderLog];
+//   payload.totalAmount = totalAmount;
+
+//   const createOrder = await Order.create({
+//     ...payload,
+//     user: decodedToken.userId,
+//   });
+
+//   // Create Invoice
+
+//   const order = await Order.findById(createOrder._id)
+//     .populate({
+//       path: "carts",
+//       populate: {
+//         path: "product", // Assuming cart.product is ObjectId of Product
+//         model: "Product",
+//         select: "name price", // select only needed fields
+//       },
+//     })
+//     .populate("user");
+
+//   if (!order) throw new AppError(httpStatus.NOT_FOUND, "Order does not found");
+
+//   const user = await User.findById(order.user);
+//   if (!user) throw new AppError(httpStatus.NOT_FOUND, "User does not found");
+
+//   const invoiceData: IInvoiceData = {
+//     orderId: order.orderId,
+//     orderDate: order.createdAt as Date,
+//     userName: user.name as string,
+//     totalAmount: order.totalAmount,
+//     products: order.carts.map((cart: any) => ({
+//       name: cart.product.name,
+//       quantity: cart.quantity,
+//       price: cart.product.newPrice,
+//     })),
+//   };
+
+//   const pdfBuffer = await generatePdf(invoiceData);
+
+//   const cloudinaryResult = await uploadBufferToCloudinary(pdfBuffer, "invoice");
+
+//   await Order.findByIdAndUpdate(
+//     createOrder._id,
+//     { invoiceUrl: cloudinaryResult?.secure_url },
+//     { runValidators: true }
+//   );
+
+//   const additionalData = {
+//     userEmail: user.email,
+//     invoiceDownloadUrl: cloudinaryResult?.secure_url,
+//   };
+
+//   const templateData = {
+//     ...invoiceData,
+//     ...additionalData,
+//   };
+
+//   console.log(user.email);
+
+//   try {
+//     await sendEmail({
+//       to: user.email,
+//       subject: "Your Order Invoice",
+//       templateName: "invoice",
+//       templateData,
+//       attachments: [
+//         {
+//           filename: "invoice.pdf",
+//           content: pdfBuffer,
+//           contentType: "application/pdf",
+//         },
+//       ],
+//     });
+//   } catch (err) {
+//     console.error("Failed to send invoice email:", err);
+//     // Optionally decide if this should throw or be logged silently
+//     throw new AppError(
+//       httpStatus.INTERNAL_SERVER_ERROR,
+//       "Failed to send email"
+//     );
+//   }
+
+//   return createOrder;
+// };
+
 const createOrder = async (
   decodedToken: JwtPayload,
   payload: Partial<IOrder>
 ) => {
+  // 1️⃣ Check if user exists
   const isUserExits = await User.findById(decodedToken.userId);
   if (!isUserExits)
-    throw new AppError(httpStatus.BAD_REQUEST, "User does not exits!");
+    throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");
 
+  // 2️⃣ Check if carts exist
   const isCartsExits = await Cart.find({ _id: { $in: payload.carts } });
   if (isCartsExits.length !== payload.carts?.length)
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      "One or more carts do not exits!"
+      "One or more carts do not exist!"
     );
 
-  const totalAmount = isCartsExits.reduce((sum, cart) => sum + cart.amount, 0);
-
+  // 3️⃣ Validate products inside carts
   for (const cart of isCartsExits) {
     const isProductExits = await Product.findById(cart.product);
     if (!isProductExits)
       throw new AppError(httpStatus.NOT_FOUND, "Product not found!");
   }
 
+  // 4️⃣ Calculate subtotal and shipping
+  const subtotal = isCartsExits.reduce((sum, cart) => sum + cart.amount, 0);
+
+  const shippingCost = payload.shippingCost || 0;
+  const totalAmount = subtotal + shippingCost;
+
+  // 5️⃣ Create order log
   const orderLog: IOrderLog = {
     status: ORDER_STATUS.Pending,
     timestamp: new Date(),
@@ -47,44 +172,48 @@ const createOrder = async (
   payload.orderId = generateOrderId();
   payload.statusLogs = [orderLog];
   payload.totalAmount = totalAmount;
+  payload.shippingCost = shippingCost;
 
+  // 6️⃣ Create the order
   const createOrder = await Order.create({
     ...payload,
     user: decodedToken.userId,
   });
 
-  // Create Invoice
-
+  // 7️⃣ Populate order for invoice
   const order = await Order.findById(createOrder._id)
     .populate({
       path: "carts",
       populate: {
-        path: "product", // Assuming cart.product is ObjectId of Product
+        path: "product",
         model: "Product",
-        select: "name price", // select only needed fields
+        select: "name price",
       },
     })
     .populate("user");
 
-  if (!order) throw new AppError(httpStatus.NOT_FOUND, "Order does not found");
+  if (!order) throw new AppError(httpStatus.NOT_FOUND, "Order not found");
 
   const user = await User.findById(order.user);
-  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User does not found");
+  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
 
+  // 8️⃣ Prepare invoice data
   const invoiceData: IInvoiceData = {
     orderId: order.orderId,
     orderDate: order.createdAt as Date,
     userName: user.name as string,
-    totalAmount: order.totalAmount,
+    userEmail: user.email as string,
     products: order.carts.map((cart: any) => ({
       name: cart.product.name,
       quantity: cart.quantity,
-      price: cart.product.newPrice,
+      price: cart.product.price,
     })),
+    subtotal, // sum of (price * quantity)
+    shippingCost, // shipping fee
+    totalAmount: subtotal + shippingCost, // ✅ include totalAmount
   };
-
+  // 9️⃣ Generate PDF & upload to Cloudinary
   const pdfBuffer = await generatePdf(invoiceData);
-
   const cloudinaryResult = await uploadBufferToCloudinary(pdfBuffer, "invoice");
 
   await Order.findByIdAndUpdate(
@@ -93,18 +222,14 @@ const createOrder = async (
     { runValidators: true }
   );
 
-  const additionalData = {
+  // 10️⃣ Prepare template data for email
+  const templateData = {
+    ...invoiceData,
     userEmail: user.email,
     invoiceDownloadUrl: cloudinaryResult?.secure_url,
   };
 
-  const templateData = {
-    ...invoiceData,
-    ...additionalData,
-  };
-
-  console.log(user.email);
-
+  // 11️⃣ Send invoice email
   try {
     await sendEmail({
       to: user.email,
@@ -119,9 +244,21 @@ const createOrder = async (
         },
       ],
     });
+    await sendEmail({
+      to: "dev.obidyhasan@gmail.com",
+      subject: "Your Have A New Order Invoice",
+      templateName: "invoice",
+      templateData,
+      attachments: [
+        {
+          filename: "invoice.pdf",
+          content: pdfBuffer,
+          contentType: "application/pdf",
+        },
+      ],
+    });
   } catch (err) {
     console.error("Failed to send invoice email:", err);
-    // Optionally decide if this should throw or be logged silently
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
       "Failed to send email"
@@ -133,6 +270,7 @@ const createOrder = async (
 
 const getAllOrders = async () => {
   const orders = await Order.find({})
+    .sort({ createdAt: -1 })
     .populate("user", "name email")
     .populate({
       path: "carts",
@@ -156,13 +294,15 @@ const getMyOrders = async (decodedToken: JwtPayload) => {
   if (!isUserExits)
     throw new AppError(httpStatus.BAD_REQUEST, "User does not exits!");
 
-  const orders = await Order.find({ user: decodedToken.userId }).populate({
-    path: "carts",
-    populate: {
-      path: "product",
-      model: "Product", // must match your model name
-    },
-  });
+  const orders = await Order.find({ user: decodedToken.userId })
+    .sort({ createdAt: -1 })
+    .populate({
+      path: "carts",
+      populate: {
+        path: "product",
+        model: "Product", // must match your model name
+      },
+    });
 
   const totalOrders = await Order.countDocuments({ user: decodedToken.userId });
 

@@ -6,15 +6,18 @@ import AppError from "../errors/AppError";
 export interface IInvoiceProduct {
   name: string;
   quantity: number;
-  price: number;
+  price: number; // Price per unit
 }
 
 export interface IInvoiceData {
   orderId: string;
   orderDate: Date;
   userName: string;
+  userEmail: string;
   products: IInvoiceProduct[];
-  totalAmount: number;
+  subtotal: number; // Sum of (price * quantity)
+  shippingCost: number; // Shipping cost
+  totalAmount: number; // subtotal + shippingCost
 }
 
 export const generatePdf = async (
@@ -29,96 +32,84 @@ export const generatePdf = async (
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", (err) => reject(err));
 
-      // ========== HEADER ==========
-      doc.fontSize(24).fillColor("#4B0082").text("ZeroFit", { align: "left" });
+      // ========== TITLE ==========
       doc
-        .fontSize(10)
-        .fillColor("#000")
-        .text("Clothing & Accessories", { align: "left" });
-
-      doc.moveUp(2);
-      doc.fontSize(10).text("ZeroFit Company", 400);
-      doc.text("Unit 8", 400);
-      doc.text("123 Eco Street, Dhaka", 400);
-      doc.text("Bangladesh", 400);
-      doc.text("Phone: (+880) 1234-567890", 400);
-
+        .fontSize(20)
+        .fillColor("#1a73e8")
+        .text("Invoice Confirmation", { align: "center" });
       doc.moveDown(2);
 
-      // ========== INVOICE TITLE ==========
-      doc.fontSize(16).fillColor("#000").text("INVOICE", { align: "left" });
-      doc.moveDown();
-
-      // ========== BILL TO & INVOICE INFO ==========
-      const top = doc.y;
-      doc.fontSize(11).font("Helvetica-Bold").text("Bill To:", 50, top);
-      doc.font("Helvetica").text(invoiceData.userName, 50, doc.y);
-      doc.text("123 Customer St", 50);
-      doc.text("Dhaka, Bangladesh", 50);
-      doc.text("Phone: +880123456789", 50);
-      doc.text("Email: example@email.com", 50);
-
-      doc.fontSize(11).font("Helvetica-Bold").text("Invoice Number:", 350, top);
-      doc.font("Helvetica").text(invoiceData.orderId, 450, top);
-      doc.font("Helvetica-Bold").text("Order Date:", 350);
-      doc
-        .font("Helvetica")
-        .text(new Date(invoiceData.orderDate).toLocaleDateString(), 450);
-      doc.font("Helvetica-Bold").text("Payment Method:", 350);
-      doc.font("Helvetica").text("Credit Card (Stripe)", 450);
-
+      // ========== DETAILS ==========
+      doc.fontSize(12).fillColor("#000");
+      doc.text(`Name: ${invoiceData.userName}`);
+      doc.text(`Email: ${invoiceData.userEmail}`);
+      doc.text(
+        `Order Date: ${new Date(invoiceData.orderDate).toLocaleString()}`
+      );
       doc.moveDown(2);
 
       // ========== TABLE HEADER ==========
+      const tableTop = doc.y;
+      const colX = [50, 250, 350, 450]; // column positions
+
       doc.font("Helvetica-Bold").fontSize(12);
-      doc.text("Product", 50);
-      doc.text("Quantity", 250);
-      doc.text("Price", 400);
+      doc.text("Product", colX[0], tableTop);
+      doc.text("Qty", colX[1], tableTop);
+      doc.text("Price (BDT)", colX[2], tableTop);
+      doc.text("Subtotal (BDT)", colX[3], tableTop);
+
       doc
-        .moveTo(50, doc.y + 2)
-        .lineTo(550, doc.y + 2)
+        .moveTo(50, tableTop + 15)
+        .lineTo(550, tableTop + 15)
         .stroke();
-      doc.moveDown(0.5);
+
+      doc.moveDown(1);
 
       // ========== TABLE BODY ==========
       doc.font("Helvetica").fontSize(11);
+      let currentY = tableTop + 25;
+      let calculatedSubtotal = 0;
 
       invoiceData.products.forEach((item) => {
-        doc.text(item.name, 50);
-        doc.text(`${item.quantity}`, 250);
-        doc.text(`BDT ${item.price}`, 400);
-        doc.moveDown(0.5);
+        const rowSubtotal = item.price * item.quantity;
+        calculatedSubtotal += rowSubtotal;
+
+        doc.text(item.name, colX[0], currentY);
+        doc.text(`${item.quantity}`, colX[1], currentY);
+        doc.text(`BDT ${item.price.toFixed(2)}`, colX[2], currentY);
+        doc.text(`BDT ${rowSubtotal.toFixed(2)}`, colX[3], currentY);
+
+        currentY += 20;
       });
 
-      doc.moveDown(1.5);
+      doc.moveDown(2);
 
-      // ========== TOTAL SECTION ==========
-      doc.fontSize(11);
-      doc.text(`Subtotal: BDT ${invoiceData.totalAmount}`, 400);
-      doc.text(`Shipping: Free`, 400);
+      // ========== SUMMARY ==========
+      const shipping = invoiceData.shippingCost || 0;
+      const total = calculatedSubtotal + shipping;
+
+      doc.fontSize(12).text(`Subtotal: BDT ${calculatedSubtotal.toFixed(2)}`, {
+        align: "right",
+      });
+      doc.text(`Shipping: BDT ${shipping.toFixed(2)}`, { align: "right" });
+      doc.moveDown(0.5);
       doc
         .font("Helvetica-Bold")
-        .text(`Total: BDT ${invoiceData.totalAmount}`, 400);
+        .fillColor("#1a73e8")
+        .fontSize(14)
+        .text(`Total Paid: BDT ${total.toFixed(2)}`, { align: "right" });
+
       doc.moveDown(4);
 
       // ========== FOOTER ==========
       doc
-        .fontSize(10)
+        .fontSize(11)
         .fillColor("gray")
-        .text(
-          "To get additional information or if you have any doubts, contact our customer support:",
-          { align: "center" }
-        );
-
+        .text("Thanks for shopping with us!", { align: "center" });
       doc
         .fontSize(10)
         .fillColor("gray")
-        .text("Email – support@zerofit.com", { align: "center" });
-
-      doc
-        .fontSize(10)
-        .fillColor("gray")
-        .text("Phone – (+880)1234567890", { align: "center" });
+        .text(`© ${new Date().getFullYear()} Mouchack`, { align: "center" });
 
       doc.end();
     });

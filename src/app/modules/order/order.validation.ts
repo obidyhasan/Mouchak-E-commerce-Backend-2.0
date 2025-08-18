@@ -5,6 +5,7 @@ export const createOrderZodSchema = z.object({
   carts: z.array(
     z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid Cart ObjectId")
   ),
+  shippingCost: z.number("Shipping cost must be number"),
   status: z
     .enum(Object.values(ORDER_STATUS) as [string], {
       message:
