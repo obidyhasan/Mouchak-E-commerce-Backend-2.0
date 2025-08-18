@@ -267,19 +267,21 @@ const updateOrder = async (
     );
   }
 
-  const orderLog: IOrderLog = {
-    status: payload.status as ORDER_STATUS,
-    timestamp: new Date(),
-    updateBy: decodedToken.userId,
-    note: `Order request successfully. Current status is ${payload.status}.`,
-  };
+  if (payload.status) {
+    const orderLog: IOrderLog = {
+      status: payload.status as ORDER_STATUS,
+      timestamp: new Date(),
+      updateBy: decodedToken.userId,
+      note: `Order request successfully. Current status is ${payload.status}.`,
+    };
 
-  const updateParcelLog = [
-    ...(isOrderExits.statusLogs as IOrderLog[]),
-    orderLog,
-  ];
+    const updateParcelLog = [
+      ...(isOrderExits.statusLogs as IOrderLog[]),
+      orderLog,
+    ];
 
-  payload.statusLogs = updateParcelLog;
+    payload.statusLogs = updateParcelLog;
+  }
 
   const updateOrder = await Order.findByIdAndUpdate(orderId, payload, {
     new: true,
