@@ -134,7 +134,13 @@ const createOrder = async (
 const getAllOrders = async () => {
   const orders = await Order.find({})
     .populate("user", "name email")
-    .populate("carts");
+    .populate({
+      path: "carts",
+      populate: {
+        path: "product",
+        model: "Product", // must match your model name
+      },
+    });
   const totalOrders = await Order.countDocuments();
 
   return {
@@ -150,8 +156,15 @@ const getMyOrders = async (decodedToken: JwtPayload) => {
   if (!isUserExits)
     throw new AppError(httpStatus.BAD_REQUEST, "User does not exits!");
 
-  const orders = await Order.find({ user: decodedToken.userId });
-  const totalOrders = await Order.countDocuments();
+  const orders = await Order.find({ user: decodedToken.userId }).populate({
+    path: "carts",
+    populate: {
+      path: "product",
+      model: "Product", // must match your model name
+    },
+  });
+
+  const totalOrders = await Order.countDocuments({ user: decodedToken.userId });
 
   return {
     data: orders,
