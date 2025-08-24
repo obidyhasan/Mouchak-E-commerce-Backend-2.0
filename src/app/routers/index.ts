@@ -7,6 +7,7 @@ import { OTPRouter } from "../modules/otp/otp.route";
 import { StatsRouters } from "../modules/stats/stats.route";
 import { GalleryRouters } from "../modules/gallery/gallery.route";
 import { CartRouter } from "../modules/cart/cart.route";
+import { FAQRouters } from "../modules/faq/faq.route";
 
 export const router = Router();
 
@@ -38,6 +39,10 @@ const moduleRouters = [
   {
     path: "/gallery",
     router: GalleryRouters,
+  },
+  {
+    path: "/faq",
+    router: FAQRouters,
   },
   {
     path: "/cart",
