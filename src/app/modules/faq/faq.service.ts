@@ -24,6 +24,8 @@ const deleteFAQ = async (id: string) => {
   const isFAQExits = await FAQ.findById(id);
   if (!isFAQExits) throw new AppError(httpStatus.NOT_FOUND, "Faq not found!");
 
+  await FAQ.findByIdAndDelete(id);
+
   return null;
 };
 
