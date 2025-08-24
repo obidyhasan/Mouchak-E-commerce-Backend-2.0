@@ -56,46 +56,92 @@ const getProductStats = async () => {
   };
 };
 
-const getOrderStats = async () => {
+// const getOrderStats = async () => {
+//   const totalOrderPromise = Order.countDocuments();
+//   const totalOrderByStatusPromise = Order.aggregate([
+//     // Stage-1: group stage
+//     {
+//       $group: {
+//         _id: "$status",
+//         const: { $sum: 1 },
+//       },
+//     },
+//   ]);
+
+//   const ordersLast7DaysPromise = Order.countDocuments({
+//     createdAt: { $gte: sevenDaysAgo },
+//   });
+//   const ordersLast30DaysPromise = Order.countDocuments({
+//     createdAt: { $gte: thirtyDaysAgo },
+//   });
+//   const totalOrderByUniqueUsersPromise = Order.distinct("user").then(
+//     (user: any) => user.length
+//   );
+
+//   const [
+//     totalOrder,
+//     totalOrderByStatus,
+//     ordersLast30Days,
+//     totalOrderByUniqueUsers,
+//   ] = await Promise.all([
+//     totalOrderPromise,
+//     totalOrderByStatusPromise,
+//     ordersLast7DaysPromise,
+//     ordersLast30DaysPromise,
+//     totalOrderByUniqueUsersPromise,
+//   ]);
+//   return {
+//     totalOrder,
+//     totalOrderByStatus,
+//     ordersLast30Days,
+//     totalOrderByUniqueUsers,
+//   };
+// };
+
+export const getOrderStats = async () => {
   const totalOrderPromise = Order.countDocuments();
+
   const totalOrderByStatusPromise = Order.aggregate([
-    // Stage-1: group stage
-    {
-      $group: {
-        _id: "$status",
-        const: { $sum: 1 },
-      },
-    },
+    { $group: { _id: "$status", count: { $sum: 1 } } },
   ]);
 
-  const ordersLast7DaysPromise = Order.countDocuments({
-    createdAt: { $gte: sevenDaysAgo },
-  });
-  const ordersLast30DaysPromise = Order.countDocuments({
-    createdAt: { $gte: thirtyDaysAgo },
-  });
-  const totalOrderByUniqueUsersPromise = Order.distinct("user").then(
-    (user: any) => user.length
+  const monthlyOrdersPromise = Order.aggregate([
+    { $group: { _id: { $month: "$createdAt" }, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const [totalOrder, totalOrderByStatusArray, monthlyOrdersArray] =
+    await Promise.all([
+      totalOrderPromise,
+      totalOrderByStatusPromise,
+      monthlyOrdersPromise,
+    ]);
+
+  const totalOrderByStatus = totalOrderByStatusArray.reduce(
+    (acc, curr) => ({ ...acc, [curr._id]: curr.count }),
+    {}
   );
 
-  const [
-    totalOrder,
-    totalOrderByStatus,
-    ordersLast30Days,
-    totalOrderByUniqueUsers,
-  ] = await Promise.all([
-    totalOrderPromise,
-    totalOrderByStatusPromise,
-    ordersLast7DaysPromise,
-    ordersLast30DaysPromise,
-    totalOrderByUniqueUsersPromise,
-  ]);
-  return {
-    totalOrder,
-    totalOrderByStatus,
-    ordersLast30Days,
-    totalOrderByUniqueUsers,
-  };
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const monthlyOrders = monthlyOrdersArray.map((item) => ({
+    month: monthNames[item._id - 1],
+    count: item.count,
+  }));
+
+  return { totalOrder, totalOrderByStatus, monthlyOrders };
 };
 
 export const StatsService = {
