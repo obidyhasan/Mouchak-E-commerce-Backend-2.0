@@ -12,6 +12,7 @@ export interface IProduct {
   slug: string;
   category: string;
   price: number;
+  previousPrice: number;
   costPrice?: number;
   status: PStatus;
   description: string;

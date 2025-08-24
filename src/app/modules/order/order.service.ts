@@ -13,6 +13,8 @@ import { generatePdf, IInvoiceData } from "../../utils/invoice";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.config";
 import { sendEmail } from "../../utils/sendEmail";
 import { generateOrderId } from "../../utils/generateOrderId";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { orderSearchableFields } from "./order.constant";
 
 // const createOrder = async (
 //   decodedToken: JwtPayload,
@@ -268,25 +270,44 @@ const createOrder = async (
   return createOrder;
 };
 
-const getAllOrders = async () => {
-  const orders = await Order.find({})
-    .sort({ createdAt: -1 })
-    .populate("user", "name email")
-    .populate({
-      path: "carts",
-      populate: {
-        path: "product",
-        model: "Product", // must match your model name
-      },
-    });
-  const totalOrders = await Order.countDocuments();
+const getAllOrders = async (query: Record<string, string>) => {
+  // const orders = await Order.find({})
+  //   .sort({ createdAt: -1 })
+  //   .populate("user", "name email")
+  //   .populate({
+  //     path: "carts",
+  //     populate: {
+  //       path: "product",
+  //       model: "Product", // must match your model name
+  //     },
+  //   });
+  // const totalOrders = await Order.countDocuments();
 
-  return {
-    data: orders,
-    meta: {
-      total: totalOrders,
-    },
-  };
+  const queryBuilder = new QueryBuilder(
+    Order.find({})
+      .populate("user", "name email")
+      .populate({
+        path: "carts",
+        populate: {
+          path: "product",
+          model: "Product",
+        },
+      }),
+    query
+  );
+  const parcels = queryBuilder
+    .search(orderSearchableFields)
+    .filter()
+    .sort()
+    .fields()
+    .paginate();
+
+  const [data, meta] = await Promise.all([
+    parcels.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return { data, meta };
 };
 
 const getMyOrders = async (decodedToken: JwtPayload) => {

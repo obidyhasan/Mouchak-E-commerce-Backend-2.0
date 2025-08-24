@@ -3,17 +3,34 @@ import AppError from "../../errors/AppError";
 import { User } from "./user.model";
 import { JwtPayload } from "jsonwebtoken";
 import { IUser, Role } from "./user.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { userSearchableFields } from "./user.constant";
 
-const getAllUsers = async () => {
-  const users = await User.find({});
-  const totalUser = await User.countDocuments();
+const getAllUsers = async (query: Record<string, string>) => {
+  // const users = await User.find({});
+  // const totalUser = await User.countDocuments();
 
-  return {
-    data: users,
-    meta: {
-      total: totalUser,
-    },
-  };
+  // return {
+  //   data: users,
+  //   meta: {
+  //     total: totalUser,
+  //   },
+  // };
+
+  const queryBuilder = new QueryBuilder(User.find({}), query);
+  const users = queryBuilder
+    .search(userSearchableFields)
+    .filter()
+    .sort()
+    .fields()
+    .paginate();
+
+  const [data, meta] = await Promise.all([
+    users.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return { data, meta };
 };
 
 const getMe = async (userId: string) => {

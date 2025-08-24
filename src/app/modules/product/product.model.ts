@@ -7,6 +7,7 @@ const productSchema = new Schema<IProduct>(
     slug: { type: String, unique: true },
     category: { type: String, required: true },
     price: { type: Number, required: true },
+    previousPrice: { type: Number },
     costPrice: { type: Number },
     status: {
       type: String,

@@ -24,16 +24,16 @@ const createOrder = catchAsync(
 
 const getAllOrders = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const orders = await OrderService.getAllOrders();
+    const query = req.query;
+    const result = await OrderService.getAllOrders(
+      query as Record<string, string>
+    );
 
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.CREATED,
       message: "Get all orders successfully",
-      data: {
-        data: orders.data,
-        meta: orders.meta,
-      },
+      data: result,
     });
   }
 );

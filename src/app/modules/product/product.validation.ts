@@ -8,7 +8,8 @@ export const createProductZodSchema = z.object({
   category: z
     .string("Category required and must be string")
     .min(1, { message: "Category must be at least 1 characters" }),
-  price: z.number("NewPrice required and must be number"),
+  price: z.number("Price required and must be number"),
+  previousPrice: z.number("Previous Price must be number").optional(),
   costPrice: z.number("CostPrice must be number").optional(),
   status: z
     .enum(Object.values(PStatus) as [string], {
@@ -30,6 +31,7 @@ export const updateProductZodSchema = z.object({
     .optional(),
   image: z.string().optional(),
   price: z.number("NewPrice must be number").optional(),
+  previousPrice: z.number("Previous Price must be number").optional(),
   costPrice: z.number("CostPrice must be number").optional(),
   status: z
     .enum(Object.values(PStatus) as [string], {
