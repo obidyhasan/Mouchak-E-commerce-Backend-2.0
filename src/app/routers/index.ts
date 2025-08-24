@@ -8,6 +8,7 @@ import { StatsRouters } from "../modules/stats/stats.route";
 import { GalleryRouters } from "../modules/gallery/gallery.route";
 import { CartRouter } from "../modules/cart/cart.route";
 import { FAQRouters } from "../modules/faq/faq.route";
+import { MouwalGalleryRouters } from "../modules/mouwalGallery/mouwalGallery.route";
 
 export const router = Router();
 
@@ -39,6 +40,10 @@ const moduleRouters = [
   {
     path: "/gallery",
     router: GalleryRouters,
+  },
+  {
+    path: "/mouwal-gallery",
+    router: MouwalGalleryRouters,
   },
   {
     path: "/faq",
