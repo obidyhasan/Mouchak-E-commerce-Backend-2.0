@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Order } from "../order/order.model";
 import { Product } from "../product/product.model";
 import { User } from "../user/user.model";
