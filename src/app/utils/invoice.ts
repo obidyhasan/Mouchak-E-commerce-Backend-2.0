@@ -1,12 +1,14 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
 import AppError from "../errors/AppError";
 
 export interface IInvoiceProduct {
-  name: string;
+  name: string; // product name (বাংলা)
   quantity: number;
-  price: number; // Price per unit
+  price: number;
 }
 
 export interface IInvoiceData {
@@ -15,9 +17,9 @@ export interface IInvoiceData {
   userName: string;
   userEmail: string;
   products: IInvoiceProduct[];
-  subtotal: number; // Sum of (price * quantity)
-  shippingCost: number; // Shipping cost
-  totalAmount: number; // subtotal + shippingCost
+  subtotal: number;
+  shippingCost: number;
+  totalAmount: number;
 }
 
 export const generatePdf = async (
@@ -32,15 +34,25 @@ export const generatePdf = async (
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", (err) => reject(err));
 
+      // ========= BANGLA FONT FOR PRODUCT NAMES =========
+      const fontPath = path.join(
+        __dirname,
+        "./../font/NotoSansBengali-Regular.ttf"
+      );
+      if (fs.existsSync(fontPath)) {
+        doc.registerFont("Bangla", fontPath);
+      }
+
       // ========== TITLE ==========
       doc
+        .font("Helvetica-Bold")
         .fontSize(20)
         .fillColor("#1a73e8")
         .text("Invoice Confirmation", { align: "center" });
       doc.moveDown(2);
 
       // ========== DETAILS ==========
-      doc.fontSize(12).fillColor("#000");
+      doc.font("Helvetica").fontSize(12).fillColor("#000");
       doc.text(`Name: ${invoiceData.userName}`);
       doc.text(`Email: ${invoiceData.userEmail}`);
       doc.text(
@@ -50,7 +62,8 @@ export const generatePdf = async (
 
       // ========== TABLE HEADER ==========
       const tableTop = doc.y;
-      const colX = [50, 250, 350, 450]; // column positions
+      const colX = [50, 250, 350, 450]; // starting x of each column
+      const colWidth = [200, 100, 100, 100]; // approximate width for center align
 
       doc.font("Helvetica-Bold").fontSize(12);
       doc.text("Product", colX[0], tableTop);
@@ -62,11 +75,9 @@ export const generatePdf = async (
         .moveTo(50, tableTop + 15)
         .lineTo(550, tableTop + 15)
         .stroke();
-
       doc.moveDown(1);
 
       // ========== TABLE BODY ==========
-      doc.font("Helvetica").fontSize(11);
       let currentY = tableTop + 25;
       let calculatedSubtotal = 0;
 
@@ -74,10 +85,25 @@ export const generatePdf = async (
         const rowSubtotal = item.price * item.quantity;
         calculatedSubtotal += rowSubtotal;
 
-        doc.text(item.name, colX[0], currentY);
-        doc.text(`${item.quantity}`, colX[1], currentY);
-        doc.text(`BDT ${item.price.toFixed(2)}`, colX[2], currentY);
-        doc.text(`BDT ${rowSubtotal.toFixed(2)}`, colX[3], currentY);
+        // Product name in Bangla (left aligned)
+        doc.font("Bangla").text(item.name, colX[0], currentY);
+
+        // Quantity center aligned
+        const qtyText = `${item.quantity}`;
+        const qtyX = colX[1] + colWidth[1] / 2 - doc.widthOfString(qtyText) / 2;
+        doc.font("Helvetica").text(qtyText, qtyX, currentY);
+
+        // Price center aligned
+        const priceText = `BDT ${item.price.toFixed(2)}`;
+        const priceX =
+          colX[2] + colWidth[2] / 2 - doc.widthOfString(priceText) / 2;
+        doc.text(priceText, priceX, currentY);
+
+        // Subtotal center aligned
+        const subtotalText = `BDT ${rowSubtotal.toFixed(2)}`;
+        const subtotalX =
+          colX[3] + colWidth[3] / 2 - doc.widthOfString(subtotalText) / 2;
+        doc.text(subtotalText, subtotalX, currentY);
 
         currentY += 20;
       });
@@ -88,9 +114,12 @@ export const generatePdf = async (
       const shipping = invoiceData.shippingCost || 0;
       const total = calculatedSubtotal + shipping;
 
-      doc.fontSize(12).text(`Subtotal: BDT ${calculatedSubtotal.toFixed(2)}`, {
-        align: "right",
-      });
+      doc
+        .font("Helvetica")
+        .fontSize(12)
+        .text(`Subtotal: BDT ${calculatedSubtotal.toFixed(2)}`, {
+          align: "right",
+        });
       doc.text(`Shipping: BDT ${shipping.toFixed(2)}`, { align: "right" });
       doc.moveDown(0.5);
       doc
@@ -103,13 +132,13 @@ export const generatePdf = async (
 
       // ========== FOOTER ==========
       doc
+        .font("Helvetica")
         .fontSize(11)
         .fillColor("gray")
         .text("Thanks for shopping with us!", { align: "center" });
       doc
         .fontSize(10)
-        .fillColor("gray")
-        .text(`© ${new Date().getFullYear()} Mouchack`, { align: "center" });
+        .text(`© ${new Date().getFullYear()} Mouchak`, { align: "center" });
 
       doc.end();
     });

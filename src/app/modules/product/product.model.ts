@@ -27,7 +27,7 @@ productSchema.pre("save", async function (next) {
   if (this.isModified("name")) {
     const baseSlug = this.name.toLowerCase().split(" ").join("-");
 
-    let slug = baseSlug;
+    let slug = baseSlug.split("/").join("-");
     let counter = 0;
     while (await Product.exists({ slug })) {
       slug = `${slug}-${counter++}`;
@@ -43,7 +43,7 @@ productSchema.pre("findOneAndUpdate", async function (next) {
   if (product.name) {
     const baseSlug = product.name.toLowerCase().split(" ").join("-");
 
-    let slug = baseSlug;
+    let slug = baseSlug.split("/").join("-");
     let counter = 0;
     while (await Product.exists({ slug })) {
       slug = `${slug}-${counter++}`;
