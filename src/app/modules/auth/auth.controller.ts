@@ -24,6 +24,7 @@ const logout = catchAsync(
       httpOnly: true,
       secure: true,
       sameSite: "none",
+      path: "/",
     });
 
     sendResponse(res, {

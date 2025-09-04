@@ -10,6 +10,7 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthToken) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
+      path: "/",
     });
   }
 };
