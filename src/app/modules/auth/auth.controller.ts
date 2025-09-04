@@ -23,7 +23,7 @@ const logout = catchAsync(
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: true,
-      sameSite: "lax",
+      sameSite: "none",
     });
 
     sendResponse(res, {
