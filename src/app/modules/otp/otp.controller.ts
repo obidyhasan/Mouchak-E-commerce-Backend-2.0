@@ -12,7 +12,7 @@ const verifyOTP = catchAsync(
     const user = await OTPService.verifyOTP(email, otp);
 
     const userToken = createUserTokens(user);
-    setAuthCookie(res, userToken);
+    // setAuthCookie(res, userToken);
 
     sendResponse(res, {
       success: true,
