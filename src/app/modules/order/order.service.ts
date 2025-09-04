@@ -247,7 +247,7 @@ const createOrder = async (
       ],
     });
     await sendEmail({
-      to: "hellomoucak.com",
+      to: "hellomoucak@gmail.com",
       subject: "Your Have A New Order Invoice",
       templateName: "invoice",
       templateData,
